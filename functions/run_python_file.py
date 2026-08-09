@@ -31,6 +31,7 @@ def run_python_file(
             cwd=working_dir_abs,
             capture_output=True,
             text=True,
+            timeout=30 
         )
 
         output = ""
