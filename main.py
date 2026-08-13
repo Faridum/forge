@@ -3,12 +3,14 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import argparse
 from prompts import system_prompt 
+from call_functions import available_functions, call_function
+import json
 
 load_dotenv()
 api_key = os.environ.get("OPENROUTER_API_KEY")
 
 if api_key is None:
-    raise RuntimeError("OPENROUTER_APT_KEY not found")
+    raise RuntimeError("OPENROUTER_API_KEY not found")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -42,10 +44,12 @@ messages = [
 ]
 
 response = client.chat.completions.create(
-    model= "openrouter/free",
+    model="openrouter/free",
     messages=messages,
-    temperature=0,
+    tools=available_functions,
 )
+
+message = response.choices[0].message
 
 if response.usage is None:
     raise RuntimeError("RUNTIME ERROR")
@@ -55,4 +59,14 @@ if args.verbose:
     print(f"Prompt tokens:  {response.usage.prompt_tokens}")
     print(f"Response tokens: {response.usage.completion_tokens}")
 
+if message.tool_calls:
+    for tool_call in message.tool_calls:
+        result_message = call_function(tool_call, verbose=args.verbose)
+
+        if not result_message:
+            raise RuntimeError("Fatal error: call_function returned empty content")
+
+        if args.verbose:
+            print(f"-> {result_message['content']}")
+    
 print(f"Response: \n{response.choices[0].message.content}")

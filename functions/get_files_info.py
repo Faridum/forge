@@ -30,10 +30,26 @@ def get_files_info(working_directory: str , directory: str = ".") -> str:
 
             results.append(line)
 
-
-
         return "\n".join(results)
         # new_target_dir = os.path.getsize(os.path.isdir(os.path.join(target_dir, item)))
 
     except Exception as e:
         return f"Error: {e}"
+
+schema_get_files_info = {
+    "type": "function",
+    "function": {
+        "name": "get_files_info",
+        "description": "Lists files in a specified directory relative to the working directory, providing file size and directory status",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": "Directory path to list files from, relative to the working directory (default is the working directory itself)",
+                },
+            },
+        },
+    },
+}
+
