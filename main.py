@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 from openai import OpenAI
 import argparse
@@ -43,30 +44,41 @@ messages = [
     },
 ]
 
-response = client.chat.completions.create(
-    model="openrouter/free",
-    messages=messages,
-    tools=available_functions,
-)
-
-message = response.choices[0].message
-
-if response.usage is None:
-    raise RuntimeError("RUNTIME ERROR")
-
 if args.verbose:
     print(f"User prompt: {args.user_prompt}")
-    print(f"Prompt tokens:  {response.usage.prompt_tokens}")
-    print(f"Response tokens: {response.usage.completion_tokens}")
 
-if message.tool_calls:
-    for tool_call in message.tool_calls:
-        result_message = call_function(tool_call, verbose=args.verbose)
+for _ in range(20):
+    response = client.chat.completions.create(
+        model="openrouter/free",
+        messages=messages,
+        tools=available_functions,
+        temperature=0,
+    )
 
-        if not result_message:
-            raise RuntimeError("Fatal error: call_function returned empty content")
+    if response.usage is None:
+        raise RuntimeError("RUNTIME ERROR")
 
-        if args.verbose:
-            print(f"-> {result_message['content']}")
-    
-print(f"Response: \n{response.choices[0].message.content}")
+    if args.verbose:
+        print(f"Prompt tokens:  {response.usage.prompt_tokens}")
+        print(f"Response tokens: {response.usage.completion_tokens}")
+
+    message = response.choices[0].message
+    messages.append(message)
+
+    if message.tool_calls:
+        for tool_call in message.tool_calls:
+            result_message = call_function(tool_call, verbose=args.verbose)
+
+            if not result_message["content"]:
+                raise RuntimeError("Fatal error: call_function returned empty content")
+
+            if args.verbose:
+                print(f"-> {result_message['content']}")
+
+            messages.append(result_message)
+    else:
+        print(f"Response: \n{message.content}")
+        break
+else:
+    print("Max iterations reached. The agent did not produce a final response.")
+    sys.exit(1)
