@@ -218,7 +218,6 @@ Create a `.env` file in the project root:
 OPENROUTER_API_KEY=your_api_key_here
 ```
 
-Never commit your `.env` file or expose your API key.
 
 ---
 
